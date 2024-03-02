@@ -1,0 +1,31 @@
+version: '3.1'
+
+services:
+  shorten:
+    env_file:
+      - .env
+    build:
+      context: ./
+    ports:
+      - 8080:8080
+    sysctls:
+      net.core.somaxconn: 8128
+    restart: ${RESTART:-unless-stopped}
+    depends_on: 
+      - mongo
+
+  mongo:
+    image: mongo
+    restart: ${RESTART:-unless-stopped}
+    ports:
+      - 27017:27017
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=vocdoni
+      - MONGO_INITDB_DATABASE=voteframe
+
+    volumes:
+      - mongodb:/data/mongodb
+
+volumes:
+  mongodb: {}
