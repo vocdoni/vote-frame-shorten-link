@@ -117,7 +117,10 @@ func addURLHandler(w http.ResponseWriter, r *http.Request) {
 
 func redirectHandler(w http.ResponseWriter, r *http.Request) {
 	shortLink := strings.TrimPrefix(r.URL.Path, "/")
-
+	if len(shortLink) < 8 {
+		http.Redirect(w, r, "https://farcaster.vote", http.StatusFound)
+		return
+	}
 	var mapping URLMapping
 	err := urlCollection.FindOne(context.Background(), bson.M{"shortLink": shortLink}).Decode(&mapping)
 	if err != nil {
