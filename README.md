@@ -20,6 +20,15 @@ go run main.go
 
 Ensure the environment variables are set before starting the service.
 
+Or by using docker compose:
+
+```bash
+docker compose build
+docker compose up -d
+```
+
+See `.env` file for environment variables.
+
 ## API Usage
 
 ### Adding a New URL
