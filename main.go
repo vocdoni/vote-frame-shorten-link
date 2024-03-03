@@ -109,6 +109,7 @@ func addURLHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Printf("new link %s => %s\n", shortLink, mapping.LongLink)
+	w.Header().Set("Content-Type", "application/json")
 	if _, err := w.Write(data); err != nil {
 		http.Error(w, "Error writing response", http.StatusInternalServerError)
 		log.Println(err.Error())
