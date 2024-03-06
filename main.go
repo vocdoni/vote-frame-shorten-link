@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -11,6 +13,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"lukechampine.com/blake3"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -89,7 +93,28 @@ func addURLHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// search in longLink the Vocdoni processID
+	// if found, then add the processID to the shortLink
+	processID := []byte{}
+	for _, l := range parts[3:] {
+		if len(l) == 64 {
+			if b, err := hex.DecodeString(l); err == nil {
+				processID = b
+				break
+			}
+		}
+	}
 	shortLink := uuid.New().String()[:8]
+	shortLinkType := "uuid"
+	if processID != nil {
+		// We take the 8 first chars of the base64 encoded hash of the processID.
+		// The probability of at least one collision among 100,000 generated hashes is approximately 0.0018%.
+		// The probability of at least one collision among 1,000,000 generated hashes is approximately 0.177%.
+		hash := blake3.Sum256(processID)
+		shortLink = base64.StdEncoding.EncodeToString(hash[:])[:8]
+		shortLinkType = "processID"
+	}
+
 	mapping := URLMapping{
 		ShortLink: shortLink,
 		LongLink:  fmt.Sprintf("https://%s/%s", domain, longLink),
@@ -108,7 +133,7 @@ func addURLHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error encoding response", http.StatusInternalServerError)
 		return
 	}
-	fmt.Printf("new link %s => %s\n", shortLink, mapping.LongLink)
+	fmt.Printf("new link type %s %s => %s\n", shortLinkType, shortLink, mapping.LongLink)
 	w.Header().Set("Content-Type", "application/json")
 	if _, err := w.Write(data); err != nil {
 		http.Error(w, "Error writing response", http.StatusInternalServerError)
